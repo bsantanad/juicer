@@ -5,9 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
   <body>
-    <script id="vertex-shader-2d" type="notjs">
+    <canvas id='c'></canvas>
+    <div id="uiContainer">
+      <div id="ui">
+        <div id="move_x"></div>
+        <div id="move_y"></div>
+        <div id="move_z"></div>
+        <div id="angle_x"></div>
+        <div id="angle_y"></div>
+        <div id="angle_z"></div>
+        <div id="scale_x"></div>
+        <div id="scale_y"></div>
+        <div id="scale_z"></div>
+  </div>
+</div>
+    <script id="vertex-shader-3d" type="notjs">
+      attribute vec4 a_position;
+      uniform mat4 u_matrix;
+
+      void main(){
+        gl_Position = u_matrix * a_position;
+      }
     </script>
-    <script id="fragment-shader-2d" type="notjs">
+    <script id="fragment-shader-3d" type="notjs">
+      precision mediump float;
+      uniform vec4 u_color;
+
+      void main() {
+        gl_FragColor = u_color;
+      }
     </script>
 
     <script src="./lib/webgl-utils.js"></script>
