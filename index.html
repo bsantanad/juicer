@@ -19,12 +19,25 @@
         <div id="scale_y"></div>
         <div id="scale_z"></div>
         <div id="camera"></div>
+
       </div>
     </div>
-    <input type="text" id="shape" name="shape"
-           value="0" onchange="main()"><br>
-    <input type="file" name="inputfile"
-            id="inputfile" accept=".ob"><br>
+
+    <div id="container">
+        <label for="name" class="text">
+           write the index of the polygon you want to transform: 
+        </label>
+        <input type="number" id="shape" name="shape" 
+               value="0" onchange="main()"><br><br>
+        <label for="name" class="text"> upload a color file (.co): </label><br><br>
+        <input type="file" name="color-file"
+                id="color-file" accept=".co"><br><br>
+         <div id="poly" style="display:none">
+        <label for="name" class="text"> upload a polygon file (.ob): </label><br><br>
+        <input type="file" name="poly-file"
+                id="poly-file" accept=".ob"><br>
+         </div>
+    </div>
     <script id="vertex-shader-3d" type="notjs">
       attribute vec4 a_position;
       attribute vec4 a_color;

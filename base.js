@@ -2,7 +2,7 @@
 
 var global = this;
 var objects = [];
-for (let i=0; i<2; i++) {
+for (let i=0; i<100; i++) {
     var object = {
       uniforms: {
         u_matrix: m4.identity(),
@@ -13,6 +13,9 @@ for (let i=0; i<2; i++) {
     };
     global.objects.push(object);
 }
+
+var polygonVertexes = [];
+var colorsData = [];
 
 function computeMatrix(viewProjectionMatrix, translation, rotation, scale) {
     var matrix = m4.translate(viewProjectionMatrix,
@@ -56,30 +59,22 @@ function main() {
   /* fragment shader */
   var colorLocation = gl.getUniformLocation(program, "u_color");
 
-
-  const triangle = createTriangle(gl);
-  const triangle2 = createTriangle2(gl);
-  var shapes = [
-    triangle,
-    triangle2,
-  ];
-
+  /* create all the array buffers for the polygons that have been uploaded */
+  var shapes = [];
   var objectsToDraw = [];
-  //var objects = [];
-
-  /* init scale, rotation, etc.. values */
-  for (let i=0; i<2; i++) {
+  let i = 0;
+  global.polygonVertexes.forEach(function(vertexList) {
+    let polygon = createPolygon(gl, vertexList);
     objectsToDraw.push({
       program: program,
-      bufferInfo: shapes[i],
-      uniforms: global.objects[i].uniforms
+      bufferInfo: polygon,
+      uniforms: global.objects[i].uniforms,
+      vertexLength: vertexList.length,
     });
-  }
+    i++;
+  });
 
-
-  var colorBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  setColors(gl);
+  let colorBuffer = createColor(gl, colorsData[0]);
 
   var fieldOfViewRadians = m4.deg2rad(60);
   var cameraAngleRadians = m4.deg2rad(0);
@@ -87,7 +82,7 @@ function main() {
   drawScene();
 
   var shapeIndex = document.getElementById('shape').value
-  reloadSliders()
+  reloadSliders();
   function reloadSliders(){
     webgl_ui.setupSlider("#move_x",
               {value: global.objects[shapeIndex].translation[0],
@@ -174,7 +169,7 @@ function main() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     /* dont paint triangles facing backwards */
-    gl.enable(gl.CULL_FACE);
+    //gl.enable(gl.CULL_FACE);
 
     /* depth has entered the chat */
     gl.enable(gl.DEPTH_TEST);
@@ -236,7 +231,7 @@ function main() {
         // Draw the geometry.
         var primitiveType = gl.TRIANGLES;
         var offset = 0;
-        var count = 3;
+        var count = object.vertexLength / 3;
         gl.drawArrays(primitiveType, offset, count);
 
     });
@@ -246,317 +241,41 @@ function main() {
   }
 }
 
-function createTriangle(gl) {
+function createPolygon(gl, array) {
   var positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.bufferData(
       gl.ARRAY_BUFFER,
-      new Float32Array([
-          0,   0,  0,
-          0, 150,   0,
-          30,   0,  0]),
+      new Float32Array(array),
       gl.STATIC_DRAW);
   return positionBuffer;
 }
 
-function createTriangle2(gl) {
-  var positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+function createColor(gl, array) {
+  var colorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
   gl.bufferData(
       gl.ARRAY_BUFFER,
-      new Float32Array([
-          30,   0,  0,
-          30,  30,  0,
-          100,   0,  0]),
+      new Uint8Array(array),
       gl.STATIC_DRAW);
-  return positionBuffer;
-}
+  return colorBuffer;
+ }
 
-// Fill the buffer with colors for the 'F'.
-function setColors(gl) {
-  gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Uint8Array([
-          // left column front
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-
-          // top rung front
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-
-          // middle rung front
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-        200,  70, 120,
-
-          // left column back
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-
-          // top rung back
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-
-          // middle rung back
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-        80, 70, 200,
-
-          // top
-        70, 200, 210,
-        70, 200, 210,
-        70, 200, 210,
-        70, 200, 210,
-        70, 200, 210,
-        70, 200, 210,
-
-          // top rung right
-        200, 200, 70,
-        200, 200, 70,
-        200, 200, 70,
-        200, 200, 70,
-        200, 200, 70,
-        200, 200, 70,
-
-          // under top rung
-        210, 100, 70,
-        210, 100, 70,
-        210, 100, 70,
-        210, 100, 70,
-        210, 100, 70,
-        210, 100, 70,
-
-          // between top rung and middle
-        210, 160, 70,
-        210, 160, 70,
-        210, 160, 70,
-        210, 160, 70,
-        210, 160, 70,
-        210, 160, 70,
-
-          // top of middle rung
-        70, 180, 210,
-        70, 180, 210,
-        70, 180, 210,
-        70, 180, 210,
-        70, 180, 210,
-        70, 180, 210,
-
-          // right of middle rung
-        100, 70, 210,
-        100, 70, 210,
-        100, 70, 210,
-        100, 70, 210,
-        100, 70, 210,
-        100, 70, 210,
-
-          // bottom of middle rung.
-        76, 210, 100,
-        76, 210, 100,
-        76, 210, 100,
-        76, 210, 100,
-        76, 210, 100,
-        76, 210, 100,
-
-          // right of bottom
-        140, 210, 80,
-        140, 210, 80,
-        140, 210, 80,
-        140, 210, 80,
-        140, 210, 80,
-        140, 210, 80,
-
-          // bottom
-        90, 130, 110,
-        90, 130, 110,
-        90, 130, 110,
-        90, 130, 110,
-        90, 130, 110,
-        90, 130, 110,
-
-          // left side
-        160, 160, 220,
-        160, 160, 220,
-        160, 160, 220,
-        160, 160, 220,
-        160, 160, 220,
-        160, 160, 220]),
-      gl.STATIC_DRAW);
-}
-
-// Fill the buffer with the values that define a letter 'F'.
-function setGeometry(gl) {
-  gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([
-          // left column front
-          0,   0,  0,
-          0, 150,  0,
-          30,   0,  0,
-          0, 150,  0,
-          30, 150,  0,
-          30,   0,  0,
-
-          // top rung front
-          30,   0,  0,
-          30,  30,  0,
-          100,   0,  0,
-          30,  30,  0,
-          100,  30,  0,
-          100,   0,  0,
-
-          // middle rung front
-          30,  60,  0,
-          30,  90,  0,
-          67,  60,  0,
-          30,  90,  0,
-          67,  90,  0,
-          67,  60,  0,
-
-          // left column back
-            0,   0,  30,
-           30,   0,  30,
-            0, 150,  30,
-            0, 150,  30,
-           30,   0,  30,
-           30, 150,  30,
-
-          // top rung back
-           30,   0,  30,
-          100,   0,  30,
-           30,  30,  30,
-           30,  30,  30,
-          100,   0,  30,
-          100,  30,  30,
-
-          // middle rung back
-           30,  60,  30,
-           67,  60,  30,
-           30,  90,  30,
-           30,  90,  30,
-           67,  60,  30,
-           67,  90,  30,
-
-          // top
-            0,   0,   0,
-          100,   0,   0,
-          100,   0,  30,
-            0,   0,   0,
-          100,   0,  30,
-            0,   0,  30,
-
-          // top rung right
-          100,   0,   0,
-          100,  30,   0,
-          100,  30,  30,
-          100,   0,   0,
-          100,  30,  30,
-          100,   0,  30,
-
-          // under top rung
-          30,   30,   0,
-          30,   30,  30,
-          100,  30,  30,
-          30,   30,   0,
-          100,  30,  30,
-          100,  30,   0,
-
-          // between top rung and middle
-          30,   30,   0,
-          30,   60,  30,
-          30,   30,  30,
-          30,   30,   0,
-          30,   60,   0,
-          30,   60,  30,
-
-          // top of middle rung
-          30,   60,   0,
-          67,   60,  30,
-          30,   60,  30,
-          30,   60,   0,
-          67,   60,   0,
-          67,   60,  30,
-
-          // right of middle rung
-          67,   60,   0,
-          67,   90,  30,
-          67,   60,  30,
-          67,   60,   0,
-          67,   90,   0,
-          67,   90,  30,
-
-          // bottom of middle rung.
-          30,   90,   0,
-          30,   90,  30,
-          67,   90,  30,
-          30,   90,   0,
-          67,   90,  30,
-          67,   90,   0,
-
-          // right of bottom
-          30,   90,   0,
-          30,  150,  30,
-          30,   90,  30,
-          30,   90,   0,
-          30,  150,   0,
-          30,  150,  30,
-
-          // bottom
-          0,   150,   0,
-          0,   150,  30,
-          30,  150,  30,
-          0,   150,   0,
-          30,  150,  30,
-          30,  150,   0,
-
-          // left side
-          0,   0,   0,
-          0,   0,  30,
-          0, 150,  30,
-          0,   0,   0,
-          0, 150,  30,
-          0, 150,   0]),
-      gl.STATIC_DRAW);
-}
-
-/// read file from html
-const fileSelector = document.getElementById('inputfile');
-fileSelector.addEventListener('change', (event) => {
+/// read polygon file from html
+const polyFile= document.getElementById('poly-file');
+polyFile.addEventListener('change', (event) => {
   const fileList = event.target.files;
   let fileContent = "";
 
   const fr = new FileReader();
   fr.onload = () => {
     fileContent = fr.result;
-    buildArray(fileContent);
+    buildArrayPoly(fileContent);
   }
   fr.readAsText(fileList[0]);
 });
 
-function buildArray(coords){
+function buildArrayPoly(coords){
     let numCoords = [];
     let coordsStr = coords.split('\n');
     coordsStr.forEach(function(coord) {
@@ -568,7 +287,39 @@ function buildArray(coords){
             }
         });
     });
-    return numCoords;
+    global.polygonVertexes.push(numCoords);
+    main();
+}
+
+/// read file from html
+const colorFile = document.getElementById('color-file');
+colorFile.addEventListener('change', (event) => {
+  const fileList = event.target.files;
+  let fileContent = "";
+
+  const fr = new FileReader();
+  fr.onload = () => {
+    fileContent = fr.result;
+    buildArrayColors(fileContent);
+  }
+  fr.readAsText(fileList[0]);
+});
+
+function buildArrayColors(coords){
+    let numCoords = [];
+    let coordsStr = coords.split('\n');
+    coordsStr.forEach(function(coord) {
+        let coordStr = coord.split(',')
+        coordStr.forEach(function(number) {
+            let num = parseInt(number);
+            if (!isNaN(num)) {
+              numCoords.push(num);
+            }
+        });
+    });
+    document.getElementById("poly").setAttribute("style", "display:");
+    global.colorsData.push(numCoords);
+    main();
 }
 
 
