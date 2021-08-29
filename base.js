@@ -542,4 +542,34 @@ function setGeometry(gl) {
       gl.STATIC_DRAW);
 }
 
+/// read file from html
+const fileSelector = document.getElementById('inputfile');
+fileSelector.addEventListener('change', (event) => {
+  const fileList = event.target.files;
+  let fileContent = "";
+
+  const fr = new FileReader();
+  fr.onload = () => {
+    fileContent = fr.result;
+    buildArray(fileContent);
+  }
+  fr.readAsText(fileList[0]);
+});
+
+function buildArray(coords){
+    let numCoords = [];
+    let coordsStr = coords.split('\n');
+    coordsStr.forEach(function(coord) {
+        let coordStr = coord.split(',')
+        coordStr.forEach(function(number) {
+            let num = parseInt(number);
+            if (!isNaN(num)) {
+              numCoords.push(num);
+            }
+        });
+    });
+    return numCoords;
+}
+
+
 main();
