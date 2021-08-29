@@ -5,8 +5,8 @@
 function main() {
   /* get canvas from html*/
   var canvas = document.querySelector("#c");
-  canvas.width = 400;
-  canvas.height = 300;
+  canvas.width = 600;
+  canvas.height = 600;
 
   var gl = canvas.getContext("webgl");
   if (!gl) {
@@ -56,7 +56,7 @@ function main() {
   webgl_ui.setupSlider("#move_x",
             {value: translation[0],
              slide: updatePosition(0),
-             min: -200,
+             min: -500,
              max: 200 });
   webgl_ui.setupSlider("#move_y",
             {value: translation[1],
@@ -132,7 +132,8 @@ function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     /* clear canvas */
-    gl.clearColor(0, 0, 0, 0);
+    //gl.clearColor(1, 0.5, 0.9, 1);
+    gl.clearColor(0.454, 0.325, 0.6, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     /* dont paint triangles facing backwards */
@@ -170,19 +171,6 @@ function main() {
     var offset = 0;
     gl.vertexAttribPointer(
         colorAttrLocation, size, type, normalize, stride, offset);
-
-    /* enable perspective*/
-    // Z will increase as the object is further away, if we divide
-    // the matrix by Z, it will look smaller (making it look further away)
-    //
-    // webgl takes the x, y, z and w value we assign to gl_Position and divides
-    // it by w automatically, therefore, we can just copy the Z values to W
-    // column and have them divided, giving the effect we are looking for
-    var matrix = m4.copyZtoW();
-    matrix = m4.multiply(matrix, m4.projection(gl.canvas.clientWidth,
-                                               gl.canvas.clientHeight,
-                                               400));
-
 
     /* enable perspective and field of view*/
     var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
