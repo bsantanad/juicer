@@ -45,25 +45,29 @@ function main() {
   setColors(gl);
 
   /* init scale, rotation, etc.. values */
-  var translation = [71, 108, 104];
+  var translation = [-150, 0, -360];
   var rotation = [m4.deg2rad(0), m4.deg2rad(25), m4.deg2rad(325)];
   var scale = [1, 1, 1];
-  var color = [Math.random(), Math.random(), Math.random(), 1];
+  var fieldOfViewRadians = m4.deg2rad(60);
+  var cameraAngleRadians = m4.deg2rad(0);
 
   drawScene();
 
   webgl_ui.setupSlider("#move_x",
             {value: translation[0],
              slide: updatePosition(0),
-             max: gl.canvas.width });
+             min: -200,
+             max: 200 });
   webgl_ui.setupSlider("#move_y",
             {value: translation[1],
              slide: updatePosition(1),
-             max: gl.canvas.height});
+             min: -200,
+             max: 200 });
   webgl_ui.setupSlider("#move_z",
             {value: translation[2],
              slide: updatePosition(2),
-             max: gl.canvas.height});
+             min: -1000,
+             max: 0 });
 
   webgl_ui.setupSlider("#angle_x",
             {value: m4.rad2deg(rotation[0]),
@@ -91,6 +95,15 @@ function main() {
              slide: updateScale(2),
              min: -5, max: 5, step: 0.01, precision: 2});
 
+  webgl_ui.setupSlider("#camera",
+                        {value: m4.rad2deg(cameraAngleRadians),
+                        slide: updateCameraAngle,
+                        min: -360, max: 360});
+  function updateCameraAngle(event, ui) {
+    cameraAngleRadians = m4.deg2rad(ui.value);
+    drawScene();
+  }
+
   function updatePosition(index) {
     return function(event, ui) {
       translation[index] = ui.value;
@@ -115,7 +128,6 @@ function main() {
   }
 
   function drawScene() {
-
     /* clip space to pixels */
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -172,8 +184,22 @@ function main() {
                                                400));
 
 
+    /* enable perspective and field of view*/
+    var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+    var zNear = 1;
+    var zFar = 2000;
+    var projectionMatrix = m4.perspective(fieldOfViewRadians, aspect, zNear, zFar);
+
+    /* camera */
+    var radius = 200;
+    // Compute a matrix for the camera
+    var cameraMatrix = m4.yRotation(cameraAngleRadians);
+    cameraMatrix = m4.translate(cameraMatrix, 0, 0, radius * 1.5);
+    var viewMatrix = m4.inverse(cameraMatrix);
+    var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
+
     /* tranform the matrix */
-    matrix = m4.translate(matrix, translation[0], translation[1], translation[2]);
+    var matrix = m4.translate(viewProjectionMatrix, translation[0], translation[1], translation[2]);
     matrix = m4.xRotate(matrix, rotation[0]);
     matrix = m4.yRotate(matrix, rotation[1]);
     matrix = m4.zRotate(matrix, rotation[2]);
