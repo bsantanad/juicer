@@ -9,6 +9,18 @@
     float: left;
 }
 
+#container{
+    overflow:hidden;
+    width:auto;
+    display:inline;
+    float: left;
+    padding:5em;
+}
+
+#shape {
+margin: 1em;
+}
+
 
 /* Licensed under a BSD license. See ../license.html for license */
 
