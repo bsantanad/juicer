@@ -1,6 +1,28 @@
 "use strict";
 
+var global = this;
+var objects = [];
+for (let i=0; i<2; i++) {
+    var object = {
+      uniforms: {
+        u_matrix: m4.identity(),
+      },
+      translation: [-150, 0, -360],
+      rotation: [m4.deg2rad(142), m4.deg2rad(25), m4.deg2rad(325)],
+      scale: [1, 1, 1],
+    };
+    global.objects.push(object);
+}
 
+function computeMatrix(viewProjectionMatrix, translation, rotation, scale) {
+    var matrix = m4.translate(viewProjectionMatrix,
+                              translation[0], translation[1], translation[2]);
+    matrix = m4.xRotate(matrix, rotation[0]);
+    matrix = m4.yRotate(matrix, rotation[1]);
+    matrix = m4.zRotate(matrix, rotation[2]);
+    matrix = m4.scale(matrix, scale[0], scale[1], scale[2]);
+    return matrix;
+}
 
 function main() {
   /* get canvas from html*/
@@ -13,6 +35,7 @@ function main() {
     console.log("cant run webgl");
     return;
   }
+
 
   /* get shader scripts from html */
   var vertexShaderSource = document.querySelector("#vertex-shader-3d").text;
@@ -33,72 +56,87 @@ function main() {
   /* fragment shader */
   var colorLocation = gl.getUniformLocation(program, "u_color");
 
-  /* ARRAY_BUFFER = positionBuffer */
-  var positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
-  /* fill buffer */
-  setGeometry(gl);
+  const triangle = createTriangle(gl);
+  const triangle2 = createTriangle2(gl);
+  var shapes = [
+    triangle,
+    triangle2,
+  ];
+
+  var objectsToDraw = [];
+  //var objects = [];
+
+  /* init scale, rotation, etc.. values */
+  for (let i=0; i<2; i++) {
+    objectsToDraw.push({
+      program: program,
+      bufferInfo: shapes[i],
+      uniforms: global.objects[i].uniforms
+    });
+  }
+
 
   var colorBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
   setColors(gl);
 
-  /* init scale, rotation, etc.. values */
-  var translation = [-150, 0, -360];
-  var rotation = [m4.deg2rad(0), m4.deg2rad(25), m4.deg2rad(325)];
-  var scale = [1, 1, 1];
   var fieldOfViewRadians = m4.deg2rad(60);
   var cameraAngleRadians = m4.deg2rad(0);
 
   drawScene();
 
-  webgl_ui.setupSlider("#move_x",
-            {value: translation[0],
-             slide: updatePosition(0),
-             min: -500,
-             max: 200 });
-  webgl_ui.setupSlider("#move_y",
-            {value: translation[1],
-             slide: updatePosition(1),
-             min: -200,
-             max: 200 });
-  webgl_ui.setupSlider("#move_z",
-            {value: translation[2],
-             slide: updatePosition(2),
-             min: -1000,
-             max: 0 });
+  var shapeIndex = document.getElementById('shape').value
+  reloadSliders()
+  function reloadSliders(){
+    webgl_ui.setupSlider("#move_x",
+              {value: global.objects[shapeIndex].translation[0],
+               slide: updatePosition(0),
+               min: -500,
+               max: 200 });
+    webgl_ui.setupSlider("#move_y",
+             {value: global.objects[shapeIndex].translation[1],
+              slide: updatePosition(1),
+               min: -200,
+               max: 200 });
+    webgl_ui.setupSlider("#move_z",
+              {value: global.objects[shapeIndex].translation[2],
+               slide: updatePosition(2),
+               min: -1000,
+               max: 0 });
 
-  webgl_ui.setupSlider("#angle_x",
-            {value: m4.rad2deg(rotation[0]),
-             slide: updateRotation(0),
-             max: 360});
-  webgl_ui.setupSlider("#angle_y",
-            {value: m4.rad2deg(rotation[1]),
-             slide: updateRotation(1),
-             max: 360});
-  webgl_ui.setupSlider("#angle_z",
-            {value: m4.rad2deg(rotation[2]),
-             slide: updateRotation(2),
-             max: 360});
+    webgl_ui.setupSlider("#angle_x",
+              {value: m4.rad2deg(global.objects[shapeIndex].rotation[0]),
+               slide: updateRotation(0),
+               max: 360});
+    webgl_ui.setupSlider("#angle_y",
+              {value: m4.rad2deg(global.objects[shapeIndex].rotation[1]),
+               slide: updateRotation(1),
+               max: 360});
+    webgl_ui.setupSlider("#angle_z",
+              {value: m4.rad2deg(global.objects[shapeIndex].rotation[2]),
+               slide: updateRotation(2),
+               max: 360});
 
-  webgl_ui.setupSlider("#scale_x",
-            {value: scale[0],
-             slide: updateScale(0),
-             min: -5, max: 5, step: 0.01, precision: 2});
-  webgl_ui.setupSlider("#scale_y",
-            {value: scale[1],
-             slide: updateScale(1),
-             min: -5, max: 5, step: 0.01, precision: 2});
-  webgl_ui.setupSlider("#scale_z",
-            {value: scale[2],
-             slide: updateScale(2),
-             min: -5, max: 5, step: 0.01, precision: 2});
+    webgl_ui.setupSlider("#scale_x",
+              {value: global.objects[shapeIndex].scale[0],
+               slide: updateScale(0),
+               min: -5, max: 5, step: 0.01, precision: 2});
+    webgl_ui.setupSlider("#scale_y",
+              {value: global.objects[shapeIndex].scale[1],
+               slide: updateScale(1),
+               min: -5, max: 5, step: 0.01, precision: 2});
+    webgl_ui.setupSlider("#scale_z",
+              {value: global.objects[shapeIndex].scale[2],
+               slide: updateScale(2),
+               min: -5, max: 5, step: 0.01, precision: 2});
 
+  }
   webgl_ui.setupSlider("#camera",
-                        {value: m4.rad2deg(cameraAngleRadians),
-                        slide: updateCameraAngle,
-                        min: -360, max: 360});
+             {value: m4.rad2deg(cameraAngleRadians),
+              slide: updateCameraAngle,
+              min: -360, max: 360});
+
   function updateCameraAngle(event, ui) {
     cameraAngleRadians = m4.deg2rad(ui.value);
     drawScene();
@@ -106,7 +144,7 @@ function main() {
 
   function updatePosition(index) {
     return function(event, ui) {
-      translation[index] = ui.value;
+      global.objects[shapeIndex].translation[index] = ui.value;
       drawScene();
     };
   }
@@ -115,14 +153,14 @@ function main() {
     return function(event, ui) {
       var angleInDegrees = ui.value;
       var angleInRadians = angleInDegrees * Math.PI / 180;
-      rotation[index] = angleInRadians;
+      global.objects[shapeIndex].rotation[index] = angleInRadians;
       drawScene();
     };
   }
 
   function updateScale(index) {
     return function(event, ui) {
-      scale[index] = ui.value;
+      global.objects[shapeIndex].scale[index] = ui.value;
       drawScene();
     };
   }
@@ -132,7 +170,6 @@ function main() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     /* clear canvas */
-    //gl.clearColor(1, 0.5, 0.9, 1);
     gl.clearColor(0.454, 0.325, 0.6, 1);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -141,36 +178,6 @@ function main() {
 
     /* depth has entered the chat */
     gl.enable(gl.DEPTH_TEST);
-
-    /* tell webgl to use our program (two shaders combined) */
-    gl.useProgram(program);
-
-    /* turn on attr */
-    gl.enableVertexAttribArray(positionAttrLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-
-    /* tell the attr how to read data from buffer */
-    var size = 3;
-    var type = gl.FLOAT;
-    var normalize = false;
-    var stride = 0;
-    var offset = 0;
-    gl.vertexAttribPointer(
-        positionAttrLocation, size, type, normalize, stride, offset);
-
-    /* turn on attr */
-    gl.enableVertexAttribArray(colorAttrLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-
-    /* tell the attr how to read data from buffer */
-    var size = 3;
-    var type = gl.UNSIGNED_BYTE;
-    var normalize = true; // convert 0-255 to 0-1
-    var stride = 0;
-    var offset = 0;
-    gl.vertexAttribPointer(
-        colorAttrLocation, size, type, normalize, stride, offset);
 
     /* enable perspective and field of view*/
     var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
@@ -186,22 +193,83 @@ function main() {
     var viewMatrix = m4.inverse(cameraMatrix);
     var viewProjectionMatrix = m4.multiply(projectionMatrix, viewMatrix);
 
-    /* tranform the matrix */
-    var matrix = m4.translate(viewProjectionMatrix, translation[0], translation[1], translation[2]);
-    matrix = m4.xRotate(matrix, rotation[0]);
-    matrix = m4.yRotate(matrix, rotation[1]);
-    matrix = m4.zRotate(matrix, rotation[2]);
-    matrix = m4.scale(matrix, scale[0], scale[1], scale[2]);
+    // compute matrix for each object
+    objects.forEach(function(object) {
+        object.uniforms.u_matrix = computeMatrix(
+        viewProjectionMatrix,
+        object.translation,
+        object.rotation,
+        object.scale);
+    });
 
-    // Set the matrix.
-    gl.uniformMatrix4fv(matrixLocation, false, matrix);
+    // draw the damn thing
+    objectsToDraw.forEach(function(object) {
+        gl.useProgram(object.program);
+        gl.enableVertexAttribArray(positionAttrLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, object.bufferInfo);
 
-    // Draw the geometry.
-    var primitiveType = gl.TRIANGLES;
-    var offset = 0;
-    var count = 16 * 6;
-    gl.drawArrays(primitiveType, offset, count);
+        var size = 3;
+        var type = gl.FLOAT;
+        var normalize = false;
+        var stride = 0;
+        var offset = 0;
+        gl.vertexAttribPointer(
+            positionAttrLocation, size, type, normalize, stride, offset);
+
+        ///// COLOR
+        gl.enableVertexAttribArray(colorAttrLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+
+        /* tell the attr how to read data from buffer */
+        var size = 3;
+        var type = gl.UNSIGNED_BYTE;
+        var normalize = true; // convert 0-255 to 0-1
+        var stride = 0;
+        var offset = 0;
+        gl.vertexAttribPointer(
+            colorAttrLocation, size, type, normalize, stride, offset);
+        ///// COLOR end
+
+        // Set the matrix.
+        gl.uniformMatrix4fv(matrixLocation, false, object.uniforms.u_matrix);
+
+        // Draw the geometry.
+        var primitiveType = gl.TRIANGLES;
+        var offset = 0;
+        var count = 3;
+        gl.drawArrays(primitiveType, offset, count);
+
+    });
   }
+  return {
+    reloadSliders: reloadSliders
+  }
+}
+
+function createTriangle(gl) {
+  var positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([
+          0,   0,  0,
+          0, 150,   0,
+          30,   0,  0]),
+      gl.STATIC_DRAW);
+  return positionBuffer;
+}
+
+function createTriangle2(gl) {
+  var positionBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([
+          30,   0,  0,
+          30,  30,  0,
+          100,   0,  0]),
+      gl.STATIC_DRAW);
+  return positionBuffer;
 }
 
 // Fill the buffer with colors for the 'F'.
