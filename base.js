@@ -1,5 +1,7 @@
 "use strict";
 
+
+// create empty objects to then fill with the actual polygons
 var global = this;
 var objects = [];
 for (let i=0; i<100; i++) {
@@ -17,6 +19,7 @@ for (let i=0; i<100; i++) {
 var polygonVertexes = [];
 var colorsData = [];
 
+/// helper function that will do all the matrix operations once called
 function computeMatrix(viewProjectionMatrix, translation, rotation, scale) {
     var matrix = m4.translate(viewProjectionMatrix,
                               translation[0], translation[1], translation[2]);
@@ -74,6 +77,7 @@ function main() {
     i++;
   });
 
+  /* create the information from the color buffer */
   let colorBuffer = createColor(gl, colorsData[0]);
 
   var fieldOfViewRadians = m4.deg2rad(60);
@@ -183,6 +187,10 @@ function main() {
     /* camera */
     var radius = 200;
     // Compute a matrix for the camera
+    // we dont move the camera, the camera stays in the origin the whole time
+    // we actually get a matrix that simulates the movement of the camera
+    // and then move the whole world at the inverse of that matrix.
+    // that gives the effect that we are moving the camera
     var cameraMatrix = m4.yRotation(cameraAngleRadians);
     cameraMatrix = m4.translate(cameraMatrix, 0, 0, radius * 1.5);
     var viewMatrix = m4.inverse(cameraMatrix);
@@ -197,7 +205,8 @@ function main() {
         object.scale);
     });
 
-    // draw the damn thing
+    // for each polygon we'll enable the attribute bind the buffer tell webgl
+    // how to read from that buffer and fill the attribute
     objectsToDraw.forEach(function(object) {
         gl.useProgram(object.program);
         gl.enableVertexAttribArray(positionAttrLocation);
@@ -211,7 +220,7 @@ function main() {
         gl.vertexAttribPointer(
             positionAttrLocation, size, type, normalize, stride, offset);
 
-        ///// COLOR
+        // color buffer, same idea as above
         gl.enableVertexAttribArray(colorAttrLocation);
         gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
 
@@ -223,7 +232,6 @@ function main() {
         var offset = 0;
         gl.vertexAttribPointer(
             colorAttrLocation, size, type, normalize, stride, offset);
-        ///// COLOR end
 
         // Set the matrix.
         gl.uniformMatrix4fv(matrixLocation, false, object.uniforms.u_matrix);
@@ -241,6 +249,7 @@ function main() {
   }
 }
 
+// create polygon array of vertices
 function createPolygon(gl, array) {
   var positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -251,6 +260,7 @@ function createPolygon(gl, array) {
   return positionBuffer;
 }
 
+// create color array of vertices
 function createColor(gl, array) {
   var colorBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
@@ -291,7 +301,7 @@ function buildArrayPoly(coords){
     main();
 }
 
-/// read file from html
+/// read color html
 const colorFile = document.getElementById('color-file');
 colorFile.addEventListener('change', (event) => {
   const fileList = event.target.files;
